@@ -53,6 +53,25 @@ def electronic_potential(conf: ElectronConfiguration, *, eps: float = 1e-12) -> 
     return (recip_dists).sum()
 
 
+#def external_potential(conf: ElectronConfiguration, *, eps: float = 1e-12) -> jax.Array:
+#    norm_sq = jax.vmap(partial(geom.norm, squared=True))(conf.coords)
+#    mask = conf.mask[range(len(conf.coords))]
+#    r0_square = 4
+#    non_zero_dist_sq = mask * (norm_sq / r0_square) + (1 - mask)  # r^2 external potential
+#    recip_dists = mask * jax.lax.rsqrt(non_zero_dist_sq + eps)
+#    return (recip_dists).sum()
+
+def external_potential(
+    mol_conf: MolecularConfiguration,
+    elec_conf: ElectronConfiguration, *, eps: float = 1e-12
+) -> jax.Array:
+    dist_sq, mask = geom.masked_pairwise_distance(
+        jnp.zeros_like(mol_conf.nuclei.coords), elec_conf.coords, jnp.zeros_like(mol_conf.nuclei.mask), elec_conf.mask, squared=True
+    )
+    r0_square = 4
+    return (dist_sq / r0_square).sum()
+
+
 def nuclear_potential(
     rng: RandomKey | None,
     mol_conf: MolecularConfiguration,
@@ -123,7 +142,8 @@ def local_energy(
         Es_nuc = nuclear_energy(inputs["mol"])
         Vs_el = electronic_potential(elec)
         Vs_nuc = nuclear_potential(rng_nuc, inputs["mol"], elec, {"wf": wf, **inputs})
-        Es_loc = Es_kin + Vs_nuc + Vs_el + Es_nuc
+        V_ext = external_potential(inputs["mol"], elec)
+        Es_loc = Es_kin + Vs_nuc + Vs_el + Es_nuc + V_ext
         stats = {
             "hamil/V_el": Vs_el,
             "hamil/E_kin": Es_kin,
