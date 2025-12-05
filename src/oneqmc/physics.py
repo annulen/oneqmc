@@ -143,7 +143,7 @@ def local_energy(
         Vs_el = electronic_potential(elec)
         Vs_nuc = nuclear_potential(rng_nuc, inputs["mol"], elec, {"wf": wf, **inputs})
         V_ext = external_potential(inputs["mol"], elec)
-        Es_loc = Es_kin + Vs_nuc + Vs_el + Es_nuc + V_ext
+        Es_loc = Es_kin + Vs_nuc + Vs_el + Es_nuc  # + V_ext
         stats = {
             "hamil/V_el": Vs_el,
             "hamil/E_kin": Es_kin,
