@@ -13,7 +13,10 @@ from oneqmc.density_models.base import (
     DensityFittingState,
     DensityMatrixTrainer,
 )
-from oneqmc.density_models.postprocess import create_npz_density_file
+from oneqmc.density_models.postprocess import (
+    create_npz_density_file,
+    create_cube_density_file,
+)
 from oneqmc.density_models.score_matching import ScoreMatchingDensityTrainer
 
 from ..device_utils import (
@@ -207,3 +210,9 @@ def estimate_density(
         create_npz_density_file(
             model, mol, os.path.join(workdir, "density/effective_potential.npz"), save_grid_levels
         )
+
+        # FIXME: Should work when save_grid_levels is false?
+        # FIXME: Make save_cube an argument
+        save_cube = True
+        if save_cube:
+            create_cube_density_file(model, mol, os.path.join(workdir, "density/density.cube"))
