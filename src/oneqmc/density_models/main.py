@@ -200,6 +200,10 @@ def estimate_density(
             ),
             mol,
         )
+        r = jnp.zeros(3)
+        log.info(f"Density at zero: {model(r)}")
+        log.info(
+            f"Spin density at zero: {model.spin_up_density(r) - model.spin_down_density(r)}")
         create_npz_density_file(
             model, mol, os.path.join(workdir, "density/effective_potential.npz"), save_grid_levels
         )
