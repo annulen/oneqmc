@@ -105,7 +105,7 @@ def create_cube_density_file(
         # log.info(f"{x = } { y = } {grid_z.shape = } {grid_x.shape = } {grid_y.shape = } {grid_r.shape = }")
         rho = jax.vmap(density_model.__call__)(grid_r)
         # log.info(f"{rho.shape = }")
-        return rho
+        return np.array(rho)
 
     write_cube((nx, ny, nz), rho_xy, meta, output_path)
 
