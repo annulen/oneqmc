@@ -2,6 +2,7 @@ from typing import Sequence
 
 import jax
 import numpy as np
+import jax.numpy as jnp
 
 from ..molecule import Molecule
 from .analysis import ScoreMatchingDensityModel, get_dft_grid
@@ -84,37 +85,53 @@ def create_cube_density_file(
     origin = mass_center - cube_size / 2
     meta = {
         "org": origin,
-        "xvec": (step[0], 0, 0),
-        "yvec": (0, step[1], 0),
-        "zvec": (0, 0, step[2]),
+        "xvec": np.array((step[0], 0, 0)),
+        "yvec": np.array((0, step[1], 0)),
+        "zvec": np.array((0, 0, step[2])),
         "atoms": tuple(zip(mol.charges, mol.coords)),
     }
     log.info(f"{step = }")
     log.info(f"{meta = }")
 
-    # Create rectangular 3D grid
-    # Use mgrid?? E.g. np.mgrid[-2:2.1, -2:2.1, -2:2.1].reshape(3,-1).T
-    # x = np.linspace(, 2, num=nx)
-    # y = np.linspace(-2, 2, num=ny)
-    # z = np.linspace(-2, 2, num=nz)
-    def end_value(i):
-        return origin[i] + cube_size[i] + step[i]
+    # TODO: Support xvec, yvec and zvec as 3-component vectors?
+    grid_z = jnp.linspace(origin[2], origin[2] + cube_size[2] / 2, nz)
+    log.info(f"{grid_z.shape = }")
 
-    grid_r = np.mgrid[
-        origin[0]:end_value(0):step[0],
-        origin[1]:end_value(1):step[1],
-        origin[2]:end_value(2):step[2],
-    ].reshape(3, -1).T
-    log.info(f"{grid_r.shape = }")
-    log.info(f"{grid_r = }")
+    def rho_xy(x, y):
+        # TODO: Support xvec, yvec and zvec as 3-component vectors?
+        grid_x = jnp.ones_like(grid_z) * x[0]
+        grid_y = jnp.ones_like(grid_z) * y[1]
+        grid_r = jnp.vstack((grid_x, grid_y, grid_z)).T
+        # log.info(f"{x = } { y = } {grid_z.shape = } {grid_x.shape = } {grid_y.shape = } {grid_r.shape = }")
+        rho = jax.vmap(density_model.__call__)(grid_r)
+        # log.info(f"{rho.shape = }")
+        return rho
 
-    # rho = np.array(
-    #     jax.vmap(density_model.__call__)(grid_r), dtype=np.float64
-    # )
-    rho = jax.vmap(density_model.__call__)(grid_r)
-    log.info(f"{rho.shape = }")
+    write_cube((nx, ny, nz), rho_xy, meta, output_path)
 
-    # derivatives = jax.vmap(
-    #     AutoDiffDerivativeOperator(density_model.unnormalized_log_density, ("grad", "lap"))
-    # )(grid_r)
-    write_cube(rho, meta, output_path)
+    # # Create rectangular 3D grid
+    # # Use mgrid?? E.g. np.mgrid[-2:2.1, -2:2.1, -2:2.1].reshape(3,-1).T
+    # # x = np.linspace(, 2, num=nx)
+    # # y = np.linspace(-2, 2, num=ny)
+    # # z = np.linspace(-2, 2, num=nz)
+    # def end_value(i):
+    #     return origin[i] + cube_size[i] + step[i]
+
+    # grid_r = np.mgrid[
+    #     origin[0]:end_value(0):step[0],
+    #     origin[1]:end_value(1):step[1],
+    #     origin[2]:end_value(2):step[2],
+    # ].reshape(3, -1).T
+    # log.info(f"{grid_r.shape = }")
+    # log.info(f"{grid_r = }")
+
+    # # rho = np.array(
+    # #     jax.vmap(density_model.__call__)(grid_r), dtype=np.float64
+    # # )
+    # rho = jax.vmap(density_model.__call__)(grid_r)
+    # log.info(f"{rho.shape = }")
+
+    # # derivatives = jax.vmap(
+    # #     AutoDiffDerivativeOperator(density_model.unnormalized_log_density, ("grad", "lap"))
+    # # )(grid_r)
+    # write_cube(rho, meta, output_path)

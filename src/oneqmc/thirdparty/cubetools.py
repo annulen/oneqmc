@@ -65,12 +65,13 @@ def _putline(*args):
     return s + "\n"
 
 
-def write_cube(data, meta, fname):
+def write_cube(data_shape, data_xy, meta, fname):
     """
     Write volumetric data to cube file along
     
     params:
-        data: volumetric data consisting real values
+        data_shape: nx, ny, nz
+        data_xy: callback providing data vector for fixed x and y
         meta: dict containing metadata with following keys
             atoms: list of atoms in the form (mass, [position])
             org: origin
@@ -83,7 +84,7 @@ def write_cube(data, meta, fname):
         # first two lines are comments
         cube.write(" Cubefile created by cubetools.py\n  source: none\n")
         natm = len(meta['atoms'])
-        nx, ny, nz = data.shape
+        nx, ny, nz = data_shape
         cube.write(_putline(natm, *meta['org'])) # 3rd line #atoms and origin
         cube.write(_putline(nx, *meta['xvec']))
         cube.write(_putline(ny, *meta['yvec']))
@@ -91,8 +92,11 @@ def write_cube(data, meta, fname):
         for atom_mass, atom_pos in meta['atoms']:
             cube.write(_putline(atom_mass, *atom_pos)) #skip the newline
         for i in range(nx):
+            x = meta['org'] + i * meta['xvec']
             for j in range(ny):
+                y = meta['org'] + j * meta['yvec']
+                data = data_xy(x, y)
                 for k in range(nz):
                     if (i or j or k) and k%6==0:
                         cube.write("\n")
-                    cube.write(" {0: .5E}".format(data[i,j,k]))
+                    cube.write(" {0: .5E}".format(data[k]))
