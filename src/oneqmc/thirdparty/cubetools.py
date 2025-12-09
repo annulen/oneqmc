@@ -89,8 +89,8 @@ def write_cube(data_shape, data_xy, meta, fname):
         cube.write(_putline(nx, *meta['xvec']))
         cube.write(_putline(ny, *meta['yvec']))
         cube.write(_putline(nz, *meta['zvec']))
-        for atom_mass, atom_pos in meta['atoms']:
-            cube.write(_putline(atom_mass, *atom_pos)) #skip the newline
+        for atom_charge, atom_pos in meta['atoms']:
+            cube.write(_putline(atom_charge, atom_charge, *atom_pos)) #skip the newline
         for i in range(nx):
             x = meta['org'] + i * meta['xvec']
             for j in range(ny):

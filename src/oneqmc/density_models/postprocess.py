@@ -94,7 +94,7 @@ def create_cube_density_file(
     log.info(f"{meta = }")
 
     # TODO: Support xvec, yvec and zvec as 3-component vectors?
-    grid_z = jnp.linspace(origin[2], origin[2] + cube_size[2] / 2, nz)
+    grid_z = jnp.linspace(origin[2], origin[2] + cube_size[2], nz)
     log.info(f"{grid_z.shape = }")
 
     def rho_xy(x, y):
