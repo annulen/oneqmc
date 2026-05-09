@@ -194,6 +194,15 @@ def create_ansatz(
             flash_attn=flash_attn,
             n_determinants=n_determinants,
         )
+    elif ansatz == "psiformer-new-layernorm":
+        ansatz = partial(  # type: ignore
+            Psiformer,
+            use_layernorm=True,
+            extra_bias=False,
+            separate_up_down=True,
+            flash_attn=flash_attn,
+            n_determinants=n_determinants,
+        )
     elif ansatz == "envnet":
         ansatz = partial(EnvNet, parameter_mode=orb_param_mode)  # type: ignore
     elif ansatz == "orbformer-se-small":

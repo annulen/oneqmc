@@ -10,6 +10,7 @@ def _add_only_density_and_observable_and_transferable_args(parser):
         choices=[
             "psiformer",
             "psiformer-new",
+            "psiformer-new-layernorm",
             "envnet",
             "orbformer-se-small",
             "orbformer-se",
