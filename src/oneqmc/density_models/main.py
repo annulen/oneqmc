@@ -215,4 +215,5 @@ def estimate_density(
         # FIXME: Make save_cube an argument
         save_cube = True
         if save_cube:
-            create_cube_density_file(model, mol, os.path.join(workdir, "density/density.cube"))
+            # create_cube_density_file(model, mol, os.path.join(workdir, "density/density.cube"))
+            create_cube_density_file(model, mol, os.path.join(workdir, "density/density.npy"))

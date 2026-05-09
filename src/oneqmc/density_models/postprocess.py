@@ -3,6 +3,7 @@ from typing import Sequence
 import jax
 import numpy as np
 import jax.numpy as jnp
+from jax import lax
 
 from ..molecule import Molecule
 from .analysis import ScoreMatchingDensityModel, get_dft_grid
@@ -93,37 +94,39 @@ def create_cube_density_file(
     log.info(f"{step = }")
     log.info(f"{meta = }")
 
-    # TODO: Support xvec, yvec and zvec as 3-component vectors?
-    grid_z = jnp.linspace(origin[2], origin[2] + cube_size[2], nz)
-    log.info(f"{grid_z.shape = }")
+    # # TODO: Support xvec, yvec and zvec as 3-component vectors?
+    # grid_z = jnp.linspace(origin[2], origin[2] + cube_size[2], nz)
+    # log.info(f"{grid_z.shape = }")
 
-    def rho_xy(x, y):
-        # TODO: Support xvec, yvec and zvec as 3-component vectors?
-        grid_x = jnp.ones_like(grid_z) * x[0]
-        grid_y = jnp.ones_like(grid_z) * y[1]
-        grid_r = jnp.vstack((grid_x, grid_y, grid_z)).T
-        # log.info(f"{x = } { y = } {grid_z.shape = } {grid_x.shape = } {grid_y.shape = } {grid_r.shape = }")
-        rho = jax.vmap(density_model.__call__)(grid_r)
-        # log.info(f"{rho.shape = }")
-        return np.array(rho)
+    # def rho_xy(x, y):
+    #     # TODO: Support xvec, yvec and zvec as 3-component vectors?
+    #     grid_x = jnp.ones_like(grid_z) * x[0]
+    #     grid_y = jnp.ones_like(grid_z) * y[1]
+    #     grid_r = jnp.vstack((grid_x, grid_y, grid_z)).T
+    #     # log.info(f"{x = } { y = } {grid_z.shape = } {grid_x.shape = } {grid_y.shape = } {grid_r.shape = }")
+    #     rho = jax.vmap(density_model.__call__)(grid_r)
+    #     # log.info(f"{rho.shape = }")
+    #     return np.array(rho)
 
-    write_cube((nx, ny, nz), rho_xy, meta, output_path)
+    # write_cube((nx, ny, nz), rho_xy, meta, output_path)
 
-    # # Create rectangular 3D grid
-    # # Use mgrid?? E.g. np.mgrid[-2:2.1, -2:2.1, -2:2.1].reshape(3,-1).T
-    # # x = np.linspace(, 2, num=nx)
-    # # y = np.linspace(-2, 2, num=ny)
-    # # z = np.linspace(-2, 2, num=nz)
-    # def end_value(i):
-    #     return origin[i] + cube_size[i] + step[i]
+    # Create rectangular 3D grid
+    # Code adapted from notebooks/05_alkane_scalability
+    def get_coords(box, boxorig):
+        xs = np.linspace(0, 1, nx)
+        ys = np.linspace(0, 1, ny)
+        zs = np.linspace(0, 1, nz)
+        frac_coords = np.stack(np.meshgrid(xs, ys, zs), axis=-1)
+        # permuting x<->y is necessary to match weird ordering of cube format
+        return np.einsum("yxzi,ij->xyzj", frac_coords, box) + boxorig
 
-    # grid_r = np.mgrid[
-    #     origin[0]:end_value(0):step[0],
-    #     origin[1]:end_value(1):step[1],
-    #     origin[2]:end_value(2):step[2],
-    # ].reshape(3, -1).T
-    # log.info(f"{grid_r.shape = }")
+    grid_r = get_coords(np.diag(cube_size), origin).reshape(-1, 3)
+    # log.info(f"{orig_shape = } {grid_r.shape = }")
     # log.info(f"{grid_r = }")
+    rho = lax.map(density_model.__call__, grid_r, batch_size=10000)
+    rho.reshape(nx, ny, nz)
+    with open(output_path, "wb") as f:
+        np.save(f, np.asarray(rho))
 
     # # rho = np.array(
     # #     jax.vmap(density_model.__call__)(grid_r), dtype=np.float64
