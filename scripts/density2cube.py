@@ -2,7 +2,7 @@
 
 import numpy as np
 import sys
-from oneqmc.thirdparty.cubetools import write_cube
+from oneqmc.thirdparty.cubetools import write_cube_orig
 
 ### FIXME ###
 
@@ -10,7 +10,7 @@ import logging
 log = logging.getLogger(__name__)
 
 
-def make_cube(volume_data):
+def make_cube(volume_data, output_path):
     nx = ny = nz = 101
     cube_size = np.array([12, 12, 12], dtype=np.float64)
 
@@ -27,19 +27,14 @@ def make_cube(volume_data):
         "xvec": np.array((step[0], 0, 0)),
         "yvec": np.array((0, step[1], 0)),
         "zvec": np.array((0, 0, step[2])),
-        "atoms": (2, [0,0,0]) #tuple(zip(mol.charges, mol.coords)),
+        "atoms": tuple((2, [0,0,0])) #tuple(zip(mol.charges, mol.coords)),
     }
     log.info(f"{step = }")
     log.info(f"{meta = }")
 
-    # TODO: Support xvec, yvec and zvec as 3-component vectors?
-    grid_z = np.linspace(origin[2], origin[2] + cube_size[2], nz)
-    log.info(f"{grid_z.shape = }")
-
-    def rho_xy(x, y):
-        return 
-
-    write_cube((nx, ny, nz), rho_xy, meta, output_path)
+    volume_data = volume_data.reshape(nx, ny, nz)
+    print(volume_data.shape)
+    write_cube_orig(volume_data, meta, output_path)
 
 #############
 
@@ -49,10 +44,11 @@ def load_volume_data(f) -> np.ndarray:
 
 
 def main(args):
-    assert len(args) == 1
+    assert len(args) == 2
     # with open(args[0]) as f:
     volume_data = load_volume_data(args[0])
     print(volume_data.shape)
+    make_cube(volume_data, args[1])
 
 
 if __name__ == "__main__":

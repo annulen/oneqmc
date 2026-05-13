@@ -100,3 +100,36 @@ def write_cube(data_shape, data_xy, meta, fname):
                     if (i or j or k) and k%6==0:
                         cube.write("\n")
                     cube.write(" {0: .5E}".format(data[k]))
+
+
+def write_cube_orig(data, meta, fname):
+    """
+    Write volumetric data to cube file along
+
+    params:
+        data: volumetric data consisting real values
+        meta: dict containing metadata with following keys
+            atoms: list of atoms in the form (mass, [position])
+            org: origin
+            xvec,yvec,zvec: lattice vector basis
+        fname: filename of cubefile (existing files overwritten)
+
+    returns: None
+    """
+    with open(fname, "w") as cube:
+        # first two lines are comments
+        cube.write(" Cubefile created by cubetools.py\n  source: none\n")
+        natm = len(meta['atoms'])
+        nx, ny, nz = data.shape
+        cube.write(_putline(natm, *meta['org'])) # 3rd line #atoms and origin
+        cube.write(_putline(nx, *meta['xvec']))
+        cube.write(_putline(ny, *meta['yvec']))
+        cube.write(_putline(nz, *meta['zvec']))
+        # for atom_mass, atom_pos in meta['atoms']:
+        #     cube.write(_putline(atom_mass, *atom_pos)) #skip the newline
+        for i in range(nx):
+            for j in range(ny):
+                for k in range(nz):
+                    if (i or j or k) and k%6==0:
+                        cube.write("\n")
+                    cube.write(" {0: .5E}".format(data[i,j,k]))
